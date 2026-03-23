@@ -44,8 +44,9 @@ def select_target_keywords(query: str, depth_limit: int = 1, lang: str = "en", c
 
 import uvicorn
 
-# Expose ASGI app so uvicorn/Azure can also run: uvicorn server:app
-app = mcp.streamable_http_app()
+# SSE transport avoids TrustedHostMiddleware issues on Azure
+# Endpoint: /sse
+app = mcp.sse_app()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
