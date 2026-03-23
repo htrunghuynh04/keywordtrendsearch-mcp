@@ -5,7 +5,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(
         prog='SerpApi SEO Keyword Research Tool', 
-        description='Extract keywrods from: Google Autocomplete, People Also Ask, and People Also Search and saves data to CSV/JSON/TXT.', 
+        description='Extract keywords from: Google Autocomplete, People Also Ask, and People Also Search and saves data to CSV/JSON/TXT.', 
         epilog='Found a bug? Open issue: https://github.com/chukhraiartur/seo-keyword-research-tool/issues'
     )
     parser.add_argument('-q','--query', metavar='', required=True, help='Search query (required).')
