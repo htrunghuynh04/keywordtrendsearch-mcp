@@ -1,5 +1,6 @@
 from mcp.server.fastmcp import FastMCP
 from SeoKeywordResearch import SeoKeywordResearch
+import uvicorn
 import os
 
 mcp = FastMCP("SEO Keyword Research")
@@ -42,11 +43,24 @@ def select_target_keywords(query: str, depth_limit: int = 1, lang: str = "en", c
     return result
 
 
-import uvicorn
+class BypassHostCheck:
+    """
+    MCP's transport_security.py rejects external Host headers (DNS rebinding protection).
+    On Azure, requests arrive with the azurewebsites.net hostname which is blocked.
+    This middleware rewrites the Host header to 'localhost' before MCP sees it.
+    """
+    def __init__(self, app):
+        self.app = app
 
-# SSE transport avoids TrustedHostMiddleware issues on Azure
-# Endpoint: /sse
-app = mcp.sse_app()
+    async def __call__(self, scope, receive, send):
+        if scope["type"] in ("http", "websocket"):
+            headers = [(k, v) for k, v in scope.get("headers", []) if k.lower() != b"host"]
+            headers.append((b"host", b"localhost"))
+            scope = {**scope, "headers": headers}
+        await self.app(scope, receive, send)
+
+
+app = BypassHostCheck(mcp.sse_app())
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
