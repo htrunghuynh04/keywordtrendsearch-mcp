@@ -55,7 +55,7 @@ class BypassHostCheck:
     async def __call__(self, scope, receive, send):
         if scope["type"] in ("http", "websocket"):
             headers = [(k, v) for k, v in scope.get("headers", []) if k.lower() != b"host"]
-            headers.append((b"host", b"localhost"))
+            headers.append((b"host", b"127.0.0.1"))
             scope = {**scope, "headers": headers}
         await self.app(scope, receive, send)
 
