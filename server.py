@@ -42,6 +42,11 @@ def select_target_keywords(query: str, depth_limit: int = 1, lang: str = "en", c
     return result
 
 
+import uvicorn
+
+# Expose ASGI app so uvicorn/Azure can also run: uvicorn server:app
+app = mcp.streamable_http_app()
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
