@@ -88,7 +88,7 @@ def get_keyword_trends(
     }
     timeline_result = GoogleSearch(timeline_params).get_dict()
     timeline_data = [
-        {"date": p.get("date"), "value": p.get("value", [0])[0]}
+        {"date": p.get("date"), "value": p.get("values", [{}])[0].get("extracted_value", 0)}
         for p in timeline_result.get("interest_over_time", {}).get("timeline_data", [])
     ]
 
