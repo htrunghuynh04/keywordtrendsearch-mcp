@@ -143,7 +143,17 @@ def get_keyword_trends(
     }
 
 
-app = mcp.streamable_http_app()
+from starlette.applications import Starlette
+from starlette.routing import Mount
+
+# Support both SSE (Cursor, most clients) and streamable-http transports
+_sse_app = mcp.sse_app()          # exposes GET /sse and POST /messages/
+_http_app = mcp.streamable_http_app()  # exposes POST /mcp
+
+app = Starlette(routes=[
+    Mount("/mcp", app=_http_app),  # streamable-http at /mcp
+    Mount("/", app=_sse_app),      # SSE at /sse and /messages/
+])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
