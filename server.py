@@ -52,7 +52,7 @@ def select_target_keywords(query: str, depth_limit: int = 1, lang: str = "en", c
     return result
 
 
-app = mcp.sse_app()
+app = mcp.streamable_http_app()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
