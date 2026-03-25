@@ -143,14 +143,16 @@ def get_keyword_trends(
     }
 
 
-from starlette.applications import Starlette
-from starlette.routing import Mount
+_sse = mcp.sse_app()         # handles /sse and /messages/
+_http = mcp.streamable_http_app()  # handles /mcp
 
-# Cursor uses SSE (/sse), AgentQuinta uses streamable-http (/mcp)
-app = Starlette(routes=[
-    Mount("/mcp", app=mcp.streamable_http_app()),
-    Mount("/", app=mcp.sse_app()),
-])
+
+async def app(scope, receive, send):
+    path = scope.get("path", "")
+    if path == "/mcp" or path.startswith("/mcp/"):
+        await _http(scope, receive, send)
+    else:
+        await _sse(scope, receive, send)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
