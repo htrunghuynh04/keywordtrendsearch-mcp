@@ -143,14 +143,46 @@ def get_keyword_trends(
     }
 
 
-_sse = mcp.sse_app()         # handles /sse and /messages/
-_http = mcp.streamable_http_app()  # handles /mcp
+import anyio
+
+_sse = mcp.sse_app()
+_http = mcp.streamable_http_app()
+
+
+async def _lifespan_fanout(scope, receive, send):
+    sse_in_s, sse_in_r = anyio.create_memory_object_stream(1)
+    sse_out_s, sse_out_r = anyio.create_memory_object_stream(1)
+    http_in_s, http_in_r = anyio.create_memory_object_stream(1)
+    http_out_s, http_out_r = anyio.create_memory_object_stream(1)
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(_sse, scope, sse_in_r.receive, sse_out_s.send)
+        tg.start_soon(_http, scope, http_in_r.receive, http_out_s.send)
+
+        await sse_in_s.send({"type": "lifespan.startup"})
+        await http_in_s.send({"type": "lifespan.startup"})
+        await sse_out_r.receive()
+        await http_out_r.receive()
+        await send({"type": "lifespan.startup.complete"})
+
+        await receive()  # lifespan.shutdown
+        await sse_in_s.send({"type": "lifespan.shutdown"})
+        await http_in_s.send({"type": "lifespan.shutdown"})
+        await sse_out_r.receive()
+        await http_out_r.receive()
+        await send({"type": "lifespan.shutdown.complete"})
+        tg.cancel_scope.cancel()
 
 
 async def app(scope, receive, send):
-    path = scope.get("path", "")
-    if path == "/mcp" or path.startswith("/mcp/"):
-        await _http(scope, receive, send)
+    if scope["type"] == "lifespan":
+        await _lifespan_fanout(scope, receive, send)
+    elif scope["type"] == "http":
+        path = scope.get("path", "")
+        if path == "/mcp" or path.startswith("/mcp/"):
+            await _http(scope, receive, send)
+        else:
+            await _sse(scope, receive, send)
     else:
         await _sse(scope, receive, send)
 
